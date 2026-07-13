@@ -7,6 +7,7 @@ import '../models/series_item.dart';
 import '../models/vod_item.dart';
 import '../models/xtream_category.dart';
 import 'content_source.dart';
+import 'dio_error_utils.dart';
 import 'xtream_api_service.dart';
 
 /// An authenticated Xtream Codes session for a specific profile. Unlike
@@ -54,11 +55,14 @@ class XtreamSession implements ContentSource {
       case DioExceptionType.receiveTimeout:
         return 'Timeout: il server non ha risposto in tempo.';
       case DioExceptionType.connectionError:
-        return 'Impossibile raggiungere il server.';
+        // Surface the underlying reason: on Android the same panel can fail for
+        // DNS/refused/TLS reasons that a generic message would hide, making it
+        // impossible to tell a network issue from an old-device cert issue.
+        return 'Impossibile raggiungere il server. ${describeConnectionError(e)}';
       case DioExceptionType.badResponse:
         return 'Il server ha risposto con un errore (${e.response?.statusCode ?? '?'}).';
       default:
-        return 'Errore di connessione: ${e.message}';
+        return 'Errore di connessione: ${e.message ?? describeConnectionError(e)}';
     }
   }
 

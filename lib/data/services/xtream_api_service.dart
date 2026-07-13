@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import 'dio_error_utils.dart';
+
 class XtreamAuthResult {
   const XtreamAuthResult({
     required this.success,
@@ -112,11 +114,11 @@ class XtreamApiService {
       case DioExceptionType.receiveTimeout:
         return 'Timeout: il server non ha risposto in tempo.';
       case DioExceptionType.connectionError:
-        return 'Impossibile raggiungere il server. Controlla il link.';
+        return 'Impossibile raggiungere il server. ${describeConnectionError(e)}';
       case DioExceptionType.badResponse:
         return 'Il server ha risposto con un errore (${e.response?.statusCode ?? '?'}).';
       default:
-        return 'Errore di connessione: ${e.message}';
+        return 'Errore di connessione: ${e.message ?? describeConnectionError(e)}';
     }
   }
 }
