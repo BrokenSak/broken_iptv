@@ -1,0 +1,247 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/fullscreen.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../state/catalog_refresh.dart';
+import '../../../state/live_providers.dart' show expiryDateProvider;
+import '../../common/app_logo.dart';
+import '../../common/tv_focusable.dart';
+
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Instantiate the refresher so its 24h auto-refresh timer runs.
+    ref.watch(catalogRefreshProvider);
+    final isFullscreen = ref.watch(fullscreenProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 20,
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AppLogo(size: 30),
+            const SizedBox(width: 12),
+            Text('Broken IPTV', style: Theme.of(context).textTheme.titleLarge),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Cerca',
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push('/search'),
+          ),
+          IconButton(
+            tooltip: isFullscreen ? 'Esci da schermo intero' : 'Schermo intero',
+            icon: Icon(isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+            onPressed: () => ref.read(fullscreenProvider.notifier).toggle(),
+          ),
+          IconButton(
+            tooltip: 'Impostazioni',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Size tiles to the available space so three always fit, whatever
+          // the window/screen size.
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          final horizontalPadding = (w * 0.04).clamp(12.0, 48.0);
+          final gap = (w * 0.02).clamp(8.0, 24.0);
+          final usableW = w - horizontalPadding * 2 - gap * 2;
+          final tileW = usableW / 3;
+          final tileH = (h * 0.62).clamp(120.0, tileW * 1.25);
+
+          return Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _HomeTile(
+                          label: 'TV',
+                          icon: Icons.live_tv,
+                          width: tileW,
+                          height: tileH,
+                          onTap: () => context.push('/live'),
+                        ),
+                        SizedBox(width: gap),
+                        _HomeTile(
+                          label: 'Serie',
+                          icon: Icons.video_library_outlined,
+                          width: tileW,
+                          height: tileH,
+                          onTap: () => context.push('/series'),
+                        ),
+                        SizedBox(width: gap),
+                        _HomeTile(
+                          label: 'Film',
+                          icon: Icons.movie_outlined,
+                          width: tileW,
+                          height: tileH,
+                          onTap: () => context.push('/vod'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const _ExpiryLine(),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20, top: 8),
+                child: _RefreshButton(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HomeTile extends StatelessWidget {
+  const _HomeTile({
+    required this.label,
+    required this.icon,
+    required this.width,
+    required this.height,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final double width;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = (width * 0.22).clamp(28.0, 64.0);
+    final fontSize = (width * 0.12).clamp(16.0, 26.0);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: TvFocusable(
+        borderRadius: 20,
+        onTap: onTap,
+        child: Card(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: iconSize, color: Colors.white),
+              SizedBox(height: height * 0.06),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String formatExpiry(DateTime d) {
+  final local = d.toLocal();
+  final dd = local.day.toString().padLeft(2, '0');
+  final mm = local.month.toString().padLeft(2, '0');
+  final hh = local.hour.toString().padLeft(2, '0');
+  final mi = local.minute.toString().padLeft(2, '0');
+  return '$dd/$mm/${local.year} $hh:$mi';
+}
+
+class _ExpiryLine extends ConsumerWidget {
+  const _ExpiryLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expiry = ref.watch(expiryDateProvider);
+    return expiry.maybeWhen(
+      data: (date) {
+        if (date == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'Abbonamento valido fino al ${formatExpiry(date)}',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _RefreshButton extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_RefreshButton> createState() => _RefreshButtonState();
+}
+
+class _RefreshButtonState extends ConsumerState<_RefreshButton> {
+  // Transient outcome shown inside the button itself (no snackbar).
+  String? _result;
+  bool _ok = true;
+  Timer? _resetTimer;
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _doRefresh() async {
+    final error = await ref.read(catalogRefreshProvider).refreshNow();
+    if (!mounted) return;
+    setState(() {
+      _ok = error == null;
+      _result = error == null ? 'Lista aggiornata' : 'Aggiornamento non riuscito';
+    });
+    _resetTimer?.cancel();
+    _resetTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _result = null);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final refreshing = ref.watch(catalogRefreshingProvider);
+    final label = refreshing ? 'Aggiornamento...' : (_result ?? 'Aggiorna lista');
+    final Widget icon;
+    if (refreshing) {
+      icon = const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2));
+    } else if (_result != null) {
+      icon = Icon(_ok ? Icons.check_circle_outline : Icons.error_outline);
+    } else {
+      icon = const Icon(Icons.refresh);
+    }
+
+    return TvFocusable(
+      borderRadius: 14,
+      onTap: refreshing ? () {} : _doRefresh,
+      child: OutlinedButton.icon(
+        onPressed: refreshing ? null : _doRefresh,
+        icon: icon,
+        label: Text(label),
+      ),
+    );
+  }
+}

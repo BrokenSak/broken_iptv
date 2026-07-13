@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Many Xtream/M3U panels are served over plain HTTP. Android 9+ blocks
+     cleartext by default; this config explicitly permits it (for all hosts,
+     since panel hosts change often) so the playlist loads on phones too. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
