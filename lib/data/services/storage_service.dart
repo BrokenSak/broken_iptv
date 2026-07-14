@@ -7,11 +7,18 @@ class StorageService {
   static const prefsBoxName = 'prefs';
   static const favoritesBoxName = 'favorites';
   static const watchProgressBoxName = 'watch_progress';
+  static const credentialsBoxName = 'credentials';
 
   static late Box<Map> profilesBox;
   static late Box prefsBox;
   static late Box<Map> favoritesBox;
   static late Box<Map> watchProgressBox;
+
+  /// Reliable local store for profile passwords (obfuscated). Kept in Hive
+  /// because flutter_secure_storage has proven unreliable across platforms for
+  /// this app (Windows backward-compat, and v10 failing to read back on some
+  /// Android devices) — see [SecureCredentialsService].
+  static late Box<String> credentialsBox;
 
   /// [testPath] lets tests point Hive at a plain temp directory instead of
   /// going through [Hive.initFlutter], which needs path_provider's platform
@@ -26,5 +33,6 @@ class StorageService {
     prefsBox = await Hive.openBox(prefsBoxName);
     favoritesBox = await Hive.openBox<Map>(favoritesBoxName);
     watchProgressBox = await Hive.openBox<Map>(watchProgressBoxName);
+    credentialsBox = await Hive.openBox<String>(credentialsBoxName);
   }
 }
