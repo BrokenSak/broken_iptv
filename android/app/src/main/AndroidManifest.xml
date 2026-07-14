@@ -6,8 +6,14 @@
         android:label="Broken IPTV"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- allowBackup=false: Android Auto Backup would restore the Hive data
+             (the saved playlist) on reinstall, but the Keystore key behind the
+             secure-storage password is device-bound and NOT backed up, so the
+             restored password became undecryptable → "Nessuna playlist attiva".
+             Disabling backup makes uninstall a true clean slate. -->
         <!-- usesCleartextTraffic + networkSecurityConfig: many Xtream/M3U panels
              are served over plain HTTP. Android 9+ blocks cleartext by default,
              which is why the playlist didn't load on the phone. -->
