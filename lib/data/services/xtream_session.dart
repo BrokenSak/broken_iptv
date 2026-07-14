@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../models/channel.dart';
@@ -33,6 +35,11 @@ class XtreamSession implements ContentSource {
 
   Future<dynamic> _call(String action, [Map<String, String>? extra]) async {
     try {
+      // Force a plain-string response and decode JSON ourselves: many Xtream
+      // panels return JSON with a non-JSON Content-Type (e.g. text/html), and
+      // Dio would then hand back the raw String instead of a Map/List. That
+      // made expiry/account come back empty and catalogs look empty — all
+      // silently. Decoding by hand makes parsing independent of the header.
       final response = await _dio.get(
         '$host/player_api.php',
         queryParameters: {
@@ -41,10 +48,26 @@ class XtreamSession implements ContentSource {
           if (action.isNotEmpty) 'action': action,
           ...?extra,
         },
+        options: Options(responseType: ResponseType.plain),
       );
-      return response.data;
+      return _decodeJson(response.data);
     } on DioException catch (e) {
       throw XtreamSessionException(_messageForDioError(e));
+    }
+  }
+
+  /// Decodes the panel's response to JSON regardless of Content-Type. Returns
+  /// `null` for an empty body or a non-JSON page (e.g. an HTML error page),
+  /// which the typed getters turn into a clear "no valid data" error.
+  static dynamic _decodeJson(dynamic data) {
+    if (data == null) return null;
+    if (data is! String) return data; // already decoded by Dio
+    final text = data.trim();
+    if (text.isEmpty) return null;
+    try {
+      return jsonDecode(text);
+    } catch (_) {
+      return null;
     }
   }
 

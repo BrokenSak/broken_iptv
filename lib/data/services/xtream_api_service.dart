@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import 'dio_error_utils.dart';
@@ -47,6 +49,19 @@ class XtreamApiService {
     return int.tryParse(v.toString());
   }
 
+  /// Decodes the panel response to JSON regardless of Content-Type.
+  static dynamic _decodeJson(dynamic data) {
+    if (data == null) return null;
+    if (data is! String) return data;
+    final text = data.trim();
+    if (text.isEmpty) return null;
+    try {
+      return jsonDecode(text);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<XtreamAuthResult> testConnection({
     required String host,
     required String username,
@@ -56,12 +71,16 @@ class XtreamApiService {
     final url = '$normalizedHost/player_api.php';
 
     try {
+      // Decode JSON ourselves (see XtreamSession._call): panels often send
+      // JSON with a non-JSON Content-Type, which would otherwise arrive as a
+      // raw String and be misread as "invalid response".
       final response = await _dio.get(
         url,
         queryParameters: {'username': username, 'password': password},
+        options: Options(responseType: ResponseType.plain),
       );
 
-      final data = response.data;
+      final data = _decodeJson(response.data);
       if (data is! Map) {
         return const XtreamAuthResult(
           success: false,
