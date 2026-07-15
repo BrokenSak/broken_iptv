@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/download_support.dart';
 import '../../../core/fullscreen.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../state/catalog_refresh.dart';
@@ -65,6 +66,13 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.search),
             onPressed: () => context.push('/search'),
           ),
+          // Offline downloads: phone (touch) mode on the APK only.
+          if (downloadsSupported())
+            IconButton(
+              tooltip: 'Scaricati',
+              icon: const Icon(Icons.download_outlined),
+              onPressed: () => context.push('/downloads'),
+            ),
           IconButton(
             tooltip: isFullscreen ? 'Esci da schermo intero' : 'Schermo intero',
             icon: Icon(isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),

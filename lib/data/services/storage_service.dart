@@ -9,11 +9,16 @@ class StorageService {
   static const watchProgressBoxName = 'watch_progress';
   static const credentialsBoxName = 'credentials';
   static const catalogCacheBoxName = 'catalog_cache';
+  static const downloadsBoxName = 'downloads';
 
   static late Box<Map> profilesBox;
   static late Box prefsBox;
   static late Box<Map> favoritesBox;
   static late Box<Map> watchProgressBox;
+
+  /// Offline downloads metadata (see DownloadItem). The media files live on the
+  /// filesystem; this box only tracks their state/progress/paths.
+  static late Box<Map> downloadsBox;
 
   /// Raw catalog responses (see CatalogCache). Lazy: payloads can be several
   /// MB per profile, so they are read from disk on demand, never kept in RAM.
@@ -40,5 +45,6 @@ class StorageService {
     watchProgressBox = await Hive.openBox<Map>(watchProgressBoxName);
     credentialsBox = await Hive.openBox<String>(credentialsBoxName);
     catalogCacheBox = await Hive.openLazyBox<Map>(catalogCacheBoxName);
+    downloadsBox = await Hive.openBox<Map>(downloadsBoxName);
   }
 }

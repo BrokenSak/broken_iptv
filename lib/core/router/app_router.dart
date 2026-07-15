@@ -19,6 +19,7 @@ import '../../presentation/screens/series/series_detail_screen.dart';
 import '../../presentation/screens/player/player_screen.dart';
 import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
+import '../../presentation/screens/downloads/downloads_screen.dart';
 
 /// Startup routing: on Android the very first launch goes through the
 /// TV/phone picker; after that the app always boots straight to Home with
@@ -124,6 +125,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => _bg(const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/downloads',
+      builder: (context, state) => _bg(const DownloadsScreen()),
     ),
   ],
 );

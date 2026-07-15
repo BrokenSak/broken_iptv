@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/download_support.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/download_item.dart';
+import '../../../data/models/vod_item.dart';
 import '../../../state/vod_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/download_button.dart';
 import '../../common/watch_bar.dart';
 
 class VodDetailScreen extends ConsumerWidget {
@@ -90,7 +94,10 @@ class VodDetailScreen extends ConsumerWidget {
                       if (movie.director != null) Text('Regia: ${movie.director}'),
                       if (movie.cast != null) Text('Cast: ${movie.cast}'),
                       const SizedBox(height: 24),
-                      Row(
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           ElevatedButton.icon(
                             autofocus: true,
@@ -98,14 +105,14 @@ class VodDetailScreen extends ConsumerWidget {
                             icon: const Icon(Icons.play_arrow),
                             label: Text(progress != null && !progress.finished ? 'Riprendi' : 'Guarda'),
                           ),
-                          if (progress != null && !progress.finished) ...[
-                            const SizedBox(width: 12),
+                          if (progress != null && !progress.finished)
                             OutlinedButton.icon(
                               onPressed: () => _play(context, ref, movie, resumeMs: 0),
                               icon: const Icon(Icons.replay),
                               label: const Text('Dall\'inizio'),
                             ),
-                          ],
+                          // Downloads: phone (touch) mode on the APK only.
+                          if (downloadsSupported()) _downloadButton(ref, movie),
                         ],
                       ),
                     ],
@@ -117,6 +124,23 @@ class VodDetailScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Errore: $error')),
+      ),
+    );
+  }
+
+  Widget _downloadButton(WidgetRef ref, VodDetail movie) {
+    final repo = ref.watch(vodRepositoryProvider).value;
+    if (repo == null) return const SizedBox.shrink();
+    return DownloadButton(
+      template: DownloadItem(
+        key: DownloadItem.vodKey(movie.streamId),
+        type: DownloadType.vod,
+        name: movie.name,
+        remoteUrl: repo.streamUrl(movie.streamId, movie.containerExtension),
+        containerExtension: movie.containerExtension,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        imageUrl: movie.posterUrl,
+        vodId: vodId,
       ),
     );
   }

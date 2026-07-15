@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/download_support.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/download_item.dart';
 import '../../../data/models/series_item.dart';
 import '../../../state/series_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/download_button.dart';
 import '../../common/glass_dropdown.dart';
 import '../../common/tv_focusable.dart';
 import '../../common/watch_bar.dart';
@@ -130,17 +133,15 @@ class _EpisodeTile extends ConsumerWidget {
     ref.watch(watchProgressProvider);
     final progress = ref.read(watchProgressProvider.notifier).forEpisode(seriesId, episode.id);
     final image = episode.imageUrl ?? fallbackImage;
+    final label = '${episode.episodeNum}. ${episode.title}';
+    final repo = ref.watch(seriesRepositoryProvider).value;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TvFocusable(
+    final playTile = TvFocusable(
         autofocus: autofocus,
         borderRadius: 12,
         onTap: () {
-          final repo = ref.read(seriesRepositoryProvider).value;
           if (repo == null) return;
           final url = repo.episodeUrl(episode.id, episode.containerExtension);
-          final label = '${episode.episodeNum}. ${episode.title}';
           context.push(
             Uri(path: '/player', queryParameters: {
               'url': url,
@@ -228,6 +229,35 @@ class _EpisodeTile extends ConsumerWidget {
             ],
           ),
         ),
+      );
+
+    // Downloads (phone/touch APK only): a peer focusable next to the play
+    // tile — never nested inside it, so the D-pad gets two clean stops.
+    final showDownload = downloadsSupported() && repo != null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(child: playTile),
+          if (showDownload) ...[
+            const SizedBox(width: 8),
+            DownloadButton(
+              compact: true,
+              template: DownloadItem(
+                key: DownloadItem.episodeKey(seriesId, episode.id),
+                type: DownloadType.series,
+                name: '$seriesName — $label',
+                remoteUrl: repo.episodeUrl(episode.id, episode.containerExtension),
+                containerExtension: episode.containerExtension,
+                createdAt: DateTime.now().millisecondsSinceEpoch,
+                imageUrl: image,
+                seriesId: seriesId,
+                episodeId: episode.id,
+                episodeLabel: label,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
