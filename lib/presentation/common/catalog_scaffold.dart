@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/xtream_category.dart';
 import 'grid_metrics.dart';
 import 'tv_focusable.dart';
+import 'tv_text_field.dart';
 
 // Re-exported so catalog screens (which already import this file) can reuse it.
 export '../../core/adult_filter.dart' show isAdultCategory;
@@ -67,7 +68,7 @@ class _CatalogScaffoldState extends ConsumerState<CatalogScaffold> {
     return Scaffold(
       appBar: AppBar(
         title: _searching
-            ? TextField(
+            ? TvTextFormField(
                 controller: _controller,
                 autofocus: true,
                 onChanged: widget.onSearch,

@@ -19,6 +19,7 @@ import '../../../state/profile_providers.dart';
 import '../../../state/series_providers.dart';
 import '../../../state/vod_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/app_dialogs.dart';
 import '../../common/tv_focusable.dart';
 
 // Shared text styles for settings: **bold** titles, *italic* descriptions.
@@ -62,21 +63,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _clearData() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Svuota cache?'),
-        content: const Text(
-          'Verranno eliminati preferiti, cronologia "Continua a guardare" e '
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Svuota cache?',
+      message: 'Verranno eliminati preferiti, cronologia "Continua a guardare" e '
           'immagini/cataloghi in cache. Le playlist salvate restano.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Svuota')),
-        ],
-      ),
+      confirmLabel: 'Svuota',
     );
-    if (ok != true) return;
+    if (!ok) return;
 
     await DefaultCacheManager().emptyCache();
     await StorageService.favoritesBox.clear();
@@ -104,18 +98,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _confirmDeletePlaylist(XtreamProfile profile) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminare playlist?'),
-        content: Text('"${profile.name}" verrà rimossa insieme alle credenziali salvate.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Elimina')),
-        ],
-      ),
+    final ok = await showAppConfirmDialog(
+      context,
+      title: 'Eliminare playlist?',
+      message: '"${profile.name}" verrà rimossa insieme alle credenziali salvate.',
+      confirmLabel: 'Elimina',
     );
-    if (ok == true) {
+    if (ok) {
       await ref.read(profilesProvider.notifier).remove(profile.id);
     }
   }

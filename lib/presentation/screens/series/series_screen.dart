@@ -10,6 +10,7 @@ import '../../../state/favorites_providers.dart';
 import '../../../state/live_providers.dart' show xtreamSessionProvider;
 import '../../../state/series_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/app_dialogs.dart';
 import '../../common/catalog_scaffold.dart';
 import '../../common/error_retry.dart';
 import '../../common/favorite_button.dart';
@@ -221,18 +222,13 @@ class _SeriesContinue extends ConsumerWidget {
 }
 
 Future<void> _confirmRemove(BuildContext context, WidgetRef ref, String seriesId, String name) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Rimuovere da Continua a guardare?'),
-      content: Text('"$name" verrà rimossa da Continua a guardare.'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Rimuovi')),
-      ],
-    ),
+  final ok = await showAppConfirmDialog(
+    context,
+    title: 'Rimuovere da Continua a guardare?',
+    message: '"$name" verrà rimossa da Continua a guardare.',
+    confirmLabel: 'Rimuovi',
   );
-  if (ok == true) {
+  if (ok) {
     await ref.read(watchProgressProvider.notifier).removeSeries(seriesId);
   }
 }

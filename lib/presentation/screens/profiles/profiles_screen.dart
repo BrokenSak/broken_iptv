@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/xtream_profile.dart';
 import '../../../state/profile_providers.dart';
+import '../../common/app_dialogs.dart';
 import '../../common/app_logo.dart';
 import '../../common/tv_focusable.dart';
 
@@ -56,18 +57,13 @@ class ProfilesScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref, XtreamProfile profile) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminare playlist?'),
-        content: Text('"${profile.name}" verrà rimossa insieme alle credenziali salvate.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Elimina')),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Eliminare playlist?',
+      message: '"${profile.name}" verrà rimossa insieme alle credenziali salvate.',
+      confirmLabel: 'Elimina',
     );
-    if (confirmed == true) {
+    if (confirmed) {
       await ref.read(profilesProvider.notifier).remove(profile.id);
     }
   }
@@ -133,7 +129,8 @@ class _ProfileTile extends StatelessWidget {
           ),
           title: Text(profile.name, style: Theme.of(context).textTheme.titleLarge),
           subtitle: Text('${profile.username}@${profile.host}'),
-          onTap: onSelect,
+          // No ListTile.onTap: it would be a second focus node on TV — taps
+          // and OK go through the TvFocusable wrapper instead.
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

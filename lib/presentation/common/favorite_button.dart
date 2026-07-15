@@ -63,6 +63,8 @@ Future<void> _showContinueOptions(
             ),
           ),
           ListTile(
+            // D-pad: give the sheet a focused row so OK works right away.
+            autofocus: true,
             leading: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white),
             title: Text(isFav ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'),
             onTap: () {

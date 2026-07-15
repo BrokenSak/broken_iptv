@@ -6,6 +6,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/models/xtream_profile.dart';
 import '../../../data/services/xtream_api_service.dart';
 import '../../../state/profile_providers.dart';
+import '../../common/tv_focusable.dart';
+import '../../common/tv_text_field.dart';
 
 class AddProfileScreen extends ConsumerStatefulWidget {
   const AddProfileScreen({super.key, this.existingProfile});
@@ -136,7 +138,7 @@ class _AddProfileScreenState extends ConsumerState<AddProfileScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            TextFormField(
+            TvTextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nome Playlist'),
               textInputAction: TextInputAction.next,
@@ -144,14 +146,14 @@ class _AddProfileScreenState extends ConsumerState<AddProfileScreen> {
             ),
             const SizedBox(height: 16),
             if (_kind == PlaylistKind.xtream) ...[
-              TextFormField(
+              TvTextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username'),
                 textInputAction: TextInputAction.next,
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Obbligatorio' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              TvTextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
                   labelText: 'Password',
@@ -165,7 +167,7 @@ class _AddProfileScreenState extends ConsumerState<AddProfileScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Obbligatorio' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              TvTextFormField(
                 controller: _hostController,
                 decoration: const InputDecoration(
                   labelText: 'Link',
@@ -176,7 +178,7 @@ class _AddProfileScreenState extends ConsumerState<AddProfileScreen> {
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Obbligatorio' : null,
               ),
             ] else ...[
-              TextFormField(
+              TvTextFormField(
                 controller: _m3uController,
                 decoration: const InputDecoration(
                   labelText: 'Link M3U',
@@ -187,7 +189,7 @@ class _AddProfileScreenState extends ConsumerState<AddProfileScreen> {
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Obbligatorio' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              TvTextFormField(
                 controller: _epgController,
                 decoration: const InputDecoration(
                   labelText: 'Link EPG (XMLTV) — opzionale',
@@ -224,7 +226,10 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // TvFocusable (not a bare GestureDetector) so the type can also be
+    // switched with a TV remote.
+    return TvFocusable(
+      borderRadius: 14,
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),

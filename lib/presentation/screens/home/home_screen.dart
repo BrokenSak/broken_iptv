@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +12,7 @@ import '../../../state/live_providers.dart'
     show expiryDateProvider, liveCategoriesProvider;
 import '../../../state/series_providers.dart' show seriesCategoriesProvider;
 import '../../../state/vod_providers.dart' show vodCategoriesProvider;
+import '../../common/app_dialogs.dart';
 import '../../common/app_logo.dart';
 import '../../common/tv_focusable.dart';
 
@@ -31,7 +33,21 @@ class HomeScreen extends ConsumerWidget {
     ref.read(seriesCategoriesProvider.future).ignore();
     final isFullscreen = ref.watch(fullscreenProvider);
 
-    return Scaffold(
+    // The home is the root route: a system Back here would kill the app cold.
+    // Ask first (app-themed dialog, D-pad friendly) — mainly for TV remotes.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final exit = await showAppConfirmDialog(
+          context,
+          title: 'Uscire da Broken IPTV?',
+          message: 'Vuoi chiudere l\'applicazione?',
+          confirmLabel: 'Esci',
+        );
+        if (exit) SystemNavigator.pop();
+      },
+      child: Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
         centerTitle: true,
@@ -87,6 +103,8 @@ class HomeScreen extends ConsumerWidget {
                           icon: Icons.live_tv,
                           width: tileW,
                           height: tileH,
+                          // D-pad: land on TV when the home opens.
+                          autofocus: true,
                           onTap: () => context.push('/live'),
                         ),
                         SizedBox(width: gap),
@@ -118,6 +136,7 @@ class HomeScreen extends ConsumerWidget {
             ],
           );
         },
+        ),
       ),
     );
   }
@@ -130,6 +149,7 @@ class _HomeTile extends StatelessWidget {
     required this.width,
     required this.height,
     required this.onTap,
+    this.autofocus = false,
   });
 
   final String label;
@@ -137,6 +157,7 @@ class _HomeTile extends StatelessWidget {
   final double width;
   final double height;
   final VoidCallback onTap;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +169,7 @@ class _HomeTile extends StatelessWidget {
       height: height,
       child: TvFocusable(
         borderRadius: 20,
+        autofocus: autofocus,
         onTap: onTap,
         child: Card(
           child: Column(
@@ -248,10 +270,14 @@ class _RefreshButtonState extends ConsumerState<_RefreshButton> {
     return TvFocusable(
       borderRadius: 14,
       onTap: refreshing ? () {} : _doRefresh,
-      child: OutlinedButton.icon(
-        onPressed: refreshing ? null : _doRefresh,
-        icon: icon,
-        label: Text(label),
+      // The TvFocusable is the one D-pad node: the inner button must not be a
+      // second focus stop (mouse clicks still reach it).
+      child: ExcludeFocus(
+        child: OutlinedButton.icon(
+          onPressed: refreshing ? null : _doRefresh,
+          icon: icon,
+          label: Text(label),
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../state/live_providers.dart';
 import '../../../state/search_providers.dart';
 import '../../common/tv_focusable.dart';
+import '../../common/tv_text_field.dart';
 
 /// Small rounded thumbnail for a search result, falling back to [icon] when
 /// there is no image (or it fails to load).
@@ -67,7 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
+        title: TvTextFormField(
           controller: _controller,
           autofocus: true,
           onChanged: _onChanged,

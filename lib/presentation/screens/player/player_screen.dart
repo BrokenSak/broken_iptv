@@ -563,11 +563,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Widget build(BuildContext context) {
     final hasNext = _isSeries && _findNextEpisode() != null;
 
-    return Scaffold(
+    return PopScope(
+      // System Back (TV remote / Android) closes the channel overlay first;
+      // only when nothing is open does it actually leave the player.
+      canPop: !_channelListOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _channelListOpen) {
+          setState(() => _channelListOpen = false);
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: Focus(
         autofocus: true,
         onKeyEvent: (node, event) {
+          // Controls hidden: any key only reveals them. Consuming the event
+          // matters — the buttons stay focusable while invisible, so letting
+          // it through could activate one blindly or move the focus.
+          if (!_controlsVisible) {
+            _poke();
+            return KeyEventResult.handled;
+          }
+          // Controls visible and no button focused (this root node holds the
+          // focus): OK toggles play/pause on VOD, like every TV player.
+          if (node.hasPrimaryFocus &&
+              event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.select ||
+                  event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.gameButtonA)) {
+            if (!_isLive) _togglePlayPause();
+            _poke();
+            return KeyEventResult.handled;
+          }
           _poke();
           return KeyEventResult.ignored;
         },
@@ -689,6 +716,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -1212,6 +1240,9 @@ class _ChannelListOverlayState extends ConsumerState<_ChannelListOverlay> {
                             final selected = c.streamId == widget.currentStreamId;
                             return ListTile(
                               dense: true,
+                              // D-pad: enter the list right away when the
+                              // overlay opens (no effect on touch/mouse).
+                              autofocus: index == 0 && Platform.isAndroid,
                               selected: selected,
                               selectedTileColor: Colors.white.withValues(alpha: 0.08),
                               leading: SizedBox(
