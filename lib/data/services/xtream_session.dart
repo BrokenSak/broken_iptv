@@ -45,10 +45,12 @@ class XtreamSession implements ContentSource {
 
   // No password in the cache key: the box is plain on disk.
   String _cacheKey(String action, Map<String, String>? extra) {
-    final params =
-        (extra?.entries.map((e) => '${e.key}=${e.value}').toList() ??
-                const <String>[])
-          ..sort();
+    // NB: build a fresh growable list — `const [] ..sort()` throws
+    // "Cannot modify an unmodifiable list" (broke every no-extra call).
+    final params = [
+      if (extra != null)
+        for (final e in extra.entries) '${e.key}=${e.value}',
+    ]..sort();
     return '$host|$username|$action|${params.join('&')}';
   }
 
