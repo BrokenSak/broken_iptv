@@ -80,6 +80,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await DefaultCacheManager().emptyCache();
     await StorageService.favoritesBox.clear();
     await StorageService.watchProgressBox.clear();
+    await StorageService.catalogCacheBox.clear();
     ref.invalidate(favoritesProvider);
     ref.invalidate(watchProgressProvider);
     ref.invalidate(liveCategoriesProvider);

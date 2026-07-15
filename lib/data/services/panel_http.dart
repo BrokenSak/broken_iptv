@@ -11,10 +11,12 @@ import 'package:dio/dio.dart';
 const String kPanelUserAgent = 'okhttp/4.12.0';
 
 /// Dio client for panel calls: player-friendly User-Agent and timeouts sized
-/// for big catalogs on slow mobile networks.
+/// for big catalogs on slow panels (Cloudflare-fronted ones have been seen
+/// taking 45s+ to first byte — the receive timeout must sit above that, and
+/// the disk cache makes the wait a one-off).
 Dio createPanelDio({
   Duration connectTimeout = const Duration(seconds: 12),
-  Duration receiveTimeout = const Duration(seconds: 40),
+  Duration receiveTimeout = const Duration(seconds: 75),
 }) {
   return Dio(BaseOptions(
     connectTimeout: connectTimeout,

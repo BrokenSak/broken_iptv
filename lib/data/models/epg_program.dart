@@ -20,6 +20,29 @@ class EpgProgram {
 
   bool get isPast => DateTime.now().isAfter(end);
 
+  static const _placeholderPhrases = [
+    'epg non disponibile',
+    'epg not available',
+    'no epg',
+    'not available',
+    'non disponibile',
+    'no information',
+    'nessuna informazione',
+    'no data',
+  ];
+
+  /// True for the fake filler entries some panels emit for channels without a
+  /// real guide ("EPG NON DISPONIBILE" & co., or entries with no/zero-length
+  /// time span — the parser falls back to `now` for missing timestamps, which
+  /// is where the "random time with a bar" came from). The UI must treat these
+  /// as "no EPG at all" and show nothing.
+  bool get isPlaceholder {
+    if (!end.isAfter(start)) return true;
+    final t = title.trim().toLowerCase();
+    if (t.isEmpty) return true;
+    return _placeholderPhrases.any(t.contains);
+  }
+
   static String _decodeBase64(dynamic v) {
     if (v == null) return '';
     var s = v.toString();

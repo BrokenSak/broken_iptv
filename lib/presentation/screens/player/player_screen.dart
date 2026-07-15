@@ -500,7 +500,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       case VideoAspect.auto:
         return Video(controller: _controller, fit: BoxFit.contain, controls: NoVideoControls);
       case VideoAspect.fill:
-        return Video(controller: _controller, fit: BoxFit.cover, controls: NoVideoControls);
+        // "Riempi" = stretch to the screen in BOTH directions: the whole frame
+        // stays visible (nothing cropped like BoxFit.cover) and there are no
+        // black bars — at the cost of distorting the aspect ratio.
+        return Video(controller: _controller, fit: BoxFit.fill, controls: NoVideoControls);
       case VideoAspect.ratio169:
         return Center(
           child: AspectRatio(

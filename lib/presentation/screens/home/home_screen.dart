@@ -7,7 +7,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/fullscreen.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../state/catalog_refresh.dart';
-import '../../../state/live_providers.dart' show expiryDateProvider;
+import '../../../state/live_providers.dart'
+    show expiryDateProvider, liveCategoriesProvider;
+import '../../../state/series_providers.dart' show seriesCategoriesProvider;
+import '../../../state/vod_providers.dart' show vodCategoriesProvider;
 import '../../common/app_logo.dart';
 import '../../common/tv_focusable.dart';
 
@@ -18,6 +21,14 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Instantiate the refresher so its 24h auto-refresh timer runs.
     ref.watch(catalogRefreshProvider);
+    // Warm the three catalogs in the background: on slow panels (tens of
+    // seconds per call) the fetch starts now instead of on the first tap on
+    // TV/Film/Serie. read(...) doesn't subscribe, and the FutureProviders
+    // cache the in-flight future, so repeated builds are no-ops. Errors are
+    // ignored here — the catalog screens surface them with a retry.
+    ref.read(liveCategoriesProvider.future).ignore();
+    ref.read(vodCategoriesProvider.future).ignore();
+    ref.read(seriesCategoriesProvider.future).ignore();
     final isFullscreen = ref.watch(fullscreenProvider);
 
     return Scaffold(

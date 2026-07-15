@@ -6,8 +6,10 @@ import '../data/models/epg_program.dart';
 import '../data/models/xtream_category.dart';
 import '../data/models/xtream_profile.dart';
 import '../data/repositories/live_repository.dart';
+import '../data/services/catalog_cache.dart';
 import '../data/services/content_source.dart';
 import '../data/services/m3u_source.dart';
+import '../data/services/storage_service.dart';
 import '../data/services/xtream_session.dart';
 import 'profile_providers.dart';
 
@@ -45,7 +47,14 @@ final xtreamSessionProvider = FutureProvider<ContentSource?>((ref) async {
   final password = await ref.watch(profileRepositoryProvider).getPassword(profileId);
   if (password == null) return null;
 
-  return XtreamSession(host: profile.host, username: profile.username, password: password);
+  return XtreamSession(
+    host: profile.host,
+    username: profile.username,
+    password: password,
+    // Disk cache for the catalog calls: instant loads on slow panels and an
+    // offline fallback (see CatalogCache).
+    cache: CatalogCache(StorageService.catalogCacheBox),
+  );
 });
 
 /// Full account/subscription info for the Account panel (null if unavailable).

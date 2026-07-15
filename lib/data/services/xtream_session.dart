@@ -6,6 +6,7 @@ import '../models/json_utils.dart';
 import '../models/series_item.dart';
 import '../models/vod_item.dart';
 import '../models/xtream_category.dart';
+import 'catalog_cache.dart';
 import 'content_source.dart';
 import 'dio_error_utils.dart';
 import 'panel_http.dart';
@@ -21,6 +22,7 @@ class XtreamSession implements ContentSource {
     required this.username,
     required this.password,
     Dio? dio,
+    this._cache, // exposed to callers as `cache:`
   })  : host = XtreamApiService.normalizeHost(host),
         _dio = dio ?? createPanelDio();
 
@@ -28,8 +30,47 @@ class XtreamSession implements ContentSource {
   final String username;
   final String password;
   final Dio _dio;
+  final CatalogCache? _cache;
+
+  /// Catalog actions worth caching on disk: big, slow on some panels, and
+  /// stable across a session. EPG and account info stay always-fresh.
+  static const _catalogActions = {
+    'get_live_categories',
+    'get_live_streams',
+    'get_vod_categories',
+    'get_vod_streams',
+    'get_series_categories',
+    'get_series',
+  };
+
+  // No password in the cache key: the box is plain on disk.
+  String _cacheKey(String action, Map<String, String>? extra) {
+    final params =
+        (extra?.entries.map((e) => '${e.key}=${e.value}').toList() ??
+                const <String>[])
+          ..sort();
+    return '$host|$username|$action|${params.join('&')}';
+  }
+
+  /// Drops this profile's cached catalogs ("Aggiorna lista" calls this so the
+  /// refresh really hits the panel).
+  Future<void> clearCatalogCache() async {
+    await _cache?.clearPrefix('$host|$username|');
+  }
 
   Future<dynamic> _call(String action, [Map<String, String>? extra]) async {
+    final cache = _cache;
+    final cacheable = cache != null && _catalogActions.contains(action);
+    final cacheKey = cacheable ? _cacheKey(action, extra) : '';
+
+    // Fresh cache hit → skip the network entirely (slow panels take tens of
+    // seconds per catalog call; see CatalogCache).
+    if (cacheable) {
+      final hit = await cache.fresh(cacheKey);
+      if (hit != null) return decodePanelJson(hit);
+    }
+
+    dynamic body;
     try {
       // Force a plain-string response and decode JSON ourselves: many Xtream
       // panels return JSON with a non-JSON Content-Type (e.g. text/html), and
@@ -47,10 +88,31 @@ class XtreamSession implements ContentSource {
         },
         options: Options(responseType: ResponseType.plain),
       );
-      return decodePanelJson(response.data);
+      body = response.data;
     } on DioException catch (e) {
+      // Network failure with any cached copy (even stale): serve the cache
+      // instead of an empty catalog / error screen.
+      if (cacheable) {
+        final stale = await cache.anyAge(cacheKey);
+        if (stale != null) return decodePanelJson(stale);
+      }
       throw XtreamSessionException(messageForDioError(e));
     }
+
+    final decoded = decodePanelJson(body);
+    if (cacheable) {
+      if (body is String && asPanelList(decoded) != null) {
+        // Persist only list-shaped payloads so an error/challenge page never
+        // poisons the cache.
+        await cache.put(cacheKey, body);
+      } else if (asPanelList(decoded) == null) {
+        // Invalid response (block page, connection-limit error): prefer the
+        // stale cached copy over surfacing an error.
+        final stale = await cache.anyAge(cacheKey);
+        if (stale != null) return decodePanelJson(stale);
+      }
+    }
+    return decoded;
   }
 
   /// Coerces a "list" endpoint response to a List (tolerating the numeric-keys

@@ -22,6 +22,7 @@ abstract final class GridMetrics {
   static double get spacing => _dense ? 10 : 16;
   static double get gridPadding => _dense ? 12 : 20;
 
-  /// Left category sidebar width.
-  static double get sidebarWidth => _dense ? 190 : 250;
+  /// Left category sidebar width. 230 on Android: 190 made the category
+  /// names unreadable (long IPTV names get ellipsized too aggressively).
+  static double get sidebarWidth => _dense ? 230 : 250;
 }

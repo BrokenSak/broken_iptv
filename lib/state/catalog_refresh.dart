@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/services/storage_service.dart';
+import '../data/services/xtream_session.dart';
 import 'live_providers.dart';
 import 'series_providers.dart';
 import 'vod_providers.dart';
@@ -51,6 +52,12 @@ class CatalogRefresh {
   /// or a human-readable message when the refresh failed.
   Future<String?> refreshNow() async {
     _ref.read(catalogRefreshingProvider.notifier).set(true);
+    // Drop the profile's cached catalogs first: a manual/24h refresh must hit
+    // the panel for real, not be answered by the disk cache.
+    try {
+      final source = await _ref.read(xtreamSessionProvider.future);
+      if (source is XtreamSession) await source.clearCatalogCache();
+    } catch (_) {}
     _ref.invalidate(xtreamSessionProvider);
     _ref.invalidate(liveRepositoryProvider);
     _ref.invalidate(vodRepositoryProvider);

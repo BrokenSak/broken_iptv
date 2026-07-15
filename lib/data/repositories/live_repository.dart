@@ -15,8 +15,14 @@ class LiveRepository {
 
   Future<List<Channel>> getAllChannels() => _source.getLiveStreams();
 
-  Future<List<EpgProgram>> getShortEpg(String streamId, {int limit = 20}) =>
-      _source.getShortEpg(streamId, limit: limit);
+  /// EPG entries for a channel, with the fake "EPG NON DISPONIBILE"-style
+  /// placeholders some panels emit filtered out: downstream UI (channel tile,
+  /// player top bar, full guide) treats an empty list as "no EPG" and shows
+  /// nothing, which is the correct rendering for those channels.
+  Future<List<EpgProgram>> getShortEpg(String streamId, {int limit = 20}) async {
+    final programs = await _source.getShortEpg(streamId, limit: limit);
+    return programs.where((p) => !p.isPlaceholder).toList();
+  }
 
   String streamUrl(String streamId) => _source.liveStreamUrl(streamId);
 
