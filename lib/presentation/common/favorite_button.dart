@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/ui_mode.dart';
 import '../../data/models/favorite_item.dart';
 import '../../state/favorites_providers.dart';
 
@@ -86,6 +87,13 @@ Future<void> _showContinueOptions(
   );
 }
 
+/// The heart on a tile.
+///
+/// On TV it is a **badge, not a button**: a remote must not have to aim at it
+/// (you toggle a favourite by holding OK on the tile itself), but it still has
+/// to show *that* the item is a favourite. So there it renders as a plain
+/// non-interactive, non-focusable icon, and only when the item actually is a
+/// favourite. On phone/desktop it stays the tappable button it always was.
 class FavoriteButton extends ConsumerWidget {
   const FavoriteButton({
     super.key,
@@ -104,6 +112,26 @@ class FavoriteButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(favoritesProvider);
     final isFav = ref.read(favoritesProvider.notifier).isFavorite(type, id);
+
+    if (isTvMode()) {
+      // Nothing to indicate when it isn't a favourite.
+      if (!isFav) return const SizedBox.shrink();
+      return const IgnorePointer(
+        child: ExcludeFocus(
+          child: Padding(
+            padding: EdgeInsets.all(6),
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: Color(0x8C000000), shape: BoxShape.circle),
+              child: Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(Icons.favorite, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(6),
       child: Material(

@@ -15,6 +15,7 @@ import '../../../data/models/channel.dart';
 import '../../../data/models/series_item.dart';
 import '../../../data/models/watch_progress.dart';
 import '../../../state/live_providers.dart';
+import '../../../core/ui_mode.dart';
 import '../../common/glass_dropdown.dart';
 import '../../common/tv_focusable.dart';
 import 'player_keys.dart';
@@ -125,6 +126,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   // Live channel-list overlay (zap without leaving the player).
   bool _channelListOpen = false;
+
+  /// The control the D-pad lands on when the menu opens (play/pause, or the
+  /// channel list button on live, which has no play/pause).
+  final FocusNode _primaryControlNode = FocusNode(debugLabel: 'player.primary');
 
   // Audio tracks (multi-language). We try to auto-select Italian per media.
   List<AudioTrack> _audioTracks = const [];
@@ -386,6 +391,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     } catch (_) {}
     _hideTimer?.cancel();
     _retryTimer?.cancel();
+    _primaryControlNode.dispose();
     for (final s in _subscriptions) {
       s.cancel();
     }
@@ -412,28 +418,44 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   void _scheduleHide() {
     _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), () {
+    _hideTimer = Timer(const Duration(seconds: 5), () {
       // Keep controls (and the bottom-left "Canali" button) visible while the
-      // channel list is open.
+      // channel list is open, and while paused (you want the play button).
       if (mounted && _playing && !_channelListOpen) {
-        setState(() => _controlsVisible = false);
+        _hideControls();
       }
     });
   }
 
-  void _poke() {
-    if (!_controlsVisible) setState(() => _controlsVisible = true);
+  void _hideControls() {
+    _hideTimer?.cancel();
+    if (_controlsVisible) setState(() => _controlsVisible = false);
+  }
+
+  void _showControls() {
+    if (!_controlsVisible) {
+      setState(() => _controlsVisible = true);
+      // On TV, land the focus on the main control straight away: otherwise the
+      // focus sits on the root node and OK would have no target (the ring is
+      // also the "you are here" the remote needs). Not on phone/desktop, where
+      // a focus ring appearing on a tap would just look odd.
+      if (isTvMode()) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _controlsVisible) _primaryControlNode.requestFocus();
+        });
+      }
+    }
     _scheduleHide();
   }
 
-  /// Plain open/close of the controls: a tap (or OK with no button focused)
-  /// opens them, the next one closes them.
+  void _poke() => _showControls();
+
+  /// Screen tap: open the controls, tap again to close them.
   void _toggleControls() {
-    setState(() => _controlsVisible = !_controlsVisible);
     if (_controlsVisible) {
-      _scheduleHide();
+      _hideControls();
     } else {
-      _hideTimer?.cancel();
+      _showControls();
     }
   }
 
@@ -443,15 +465,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       key: event.logicalKey,
       isKeyDown: event is KeyDownEvent,
       controlsVisible: _controlsVisible,
-      rootHasFocus: node.hasPrimaryFocus,
     )) {
       case PlayerKeyAction.ignore:
         return KeyEventResult.ignored;
       case PlayerKeyAction.revealControls:
         _poke();
-        return KeyEventResult.handled;
-      case PlayerKeyAction.toggleControls:
-        _toggleControls();
         return KeyEventResult.handled;
       case PlayerKeyAction.pokeAndPass:
         _poke();
@@ -599,13 +617,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final hasNext = _isSeries && _findNextEpisode() != null;
 
     return PopScope(
-      // System Back (TV remote / Android) closes the channel overlay first;
-      // only when nothing is open does it actually leave the player.
-      canPop: !_channelListOpen,
+      // Back (TV remote / Android) peels one layer at a time: channel overlay,
+      // then the controls — closing the menu is Back's job, since OK now
+      // presses the focused button. Only with nothing open does it leave.
+      canPop: !_channelListOpen && !_controlsVisible,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _channelListOpen) {
+        if (didPop) return;
+        if (_channelListOpen) {
           setState(() => _channelListOpen = false);
+          return;
         }
+        if (_controlsVisible) _hideControls();
       },
       child: Scaffold(
       backgroundColor: Colors.black,
@@ -694,6 +716,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         audioTracks: _audioTracks,
                         currentAudioId: _currentAudioId,
                         onSelectAudio: _selectAudio,
+                        primaryFocusNode: _primaryControlNode,
                         showVolume: !Platform.isAndroid,
                         position: _position,
                         duration: _duration,
@@ -896,16 +919,19 @@ class _PlayerButton extends StatelessWidget {
     required this.onPressed,
     required this.child,
     this.tooltip,
+    this.focusNode,
   });
 
   final VoidCallback onPressed;
   final Widget child;
   final String? tooltip;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     Widget button = TvFocusable(
       borderRadius: 12,
+      focusNode: focusNode,
       onTap: onPressed,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1088,7 +1114,11 @@ class _ControlsPanel extends StatelessWidget {
     required this.currentAudioId,
     required this.onSelectAudio,
     required this.showVolume,
+    required this.primaryFocusNode,
   });
+
+  /// Where the D-pad focus lands when the menu opens.
+  final FocusNode primaryFocusNode;
 
   final bool playing;
   final bool isLive;
@@ -1153,6 +1183,8 @@ class _ControlsPanel extends StatelessWidget {
               // Live channel list opener, at the bottom-left of the controls box.
               if (onChannelList != null)
                 _PlayerButton(
+                  // Live has no play/pause, so this is the main control.
+                  focusNode: isLive ? primaryFocusNode : null,
                   onPressed: onChannelList!,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1178,6 +1210,7 @@ class _ControlsPanel extends StatelessWidget {
               // Live streams can't be paused, so there's no play/pause button.
               if (!isLive)
                 _PlayerButton(
+                  focusNode: primaryFocusNode,
                   tooltip: playing ? 'Pausa' : 'Play',
                   onPressed: onPlayPause,
                   child: Icon(

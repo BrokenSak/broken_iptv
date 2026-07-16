@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/ui_mode.dart';
 import '../../../data/models/favorite_item.dart';
 import '../../../data/models/vod_item.dart';
 import '../../../state/favorites_providers.dart';
@@ -399,19 +398,17 @@ class _VodPoster extends ConsumerWidget {
                         : const _PosterFallback(),
                   ),
                 ),
-                // No heart on TV: it would be another thing to aim a remote at.
-                // There you hold OK on the tile instead (onLongPress above).
-                if (!isTvMode())
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: FavoriteButton(
-                      type: FavoriteType.vod,
-                      id: item.streamId,
-                      name: item.name,
-                      imageUrl: item.posterUrl,
-                    ),
+                // On TV this renders as a non-focusable badge (see FavoriteButton).
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: FavoriteButton(
+                    type: FavoriteType.vod,
+                    id: item.streamId,
+                    name: item.name,
+                    imageUrl: item.posterUrl,
                   ),
+                ),
               ],
             ),
           ),

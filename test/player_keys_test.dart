@@ -17,72 +17,41 @@ void main() {
     test('are always passed to the OS, whatever the player state', () {
       for (final key in volumeKeys) {
         for (final visible in [true, false]) {
-          for (final rootFocus in [true, false]) {
-            expect(
-              playerKeyAction(
-                key: key,
-                isKeyDown: true,
-                controlsVisible: visible,
-                rootHasFocus: rootFocus,
-              ),
-              PlayerKeyAction.ignore,
-              reason: 'volume must never be consumed nor open the menu',
-            );
-          }
+          expect(
+            playerKeyAction(key: key, isKeyDown: true, controlsVisible: visible),
+            PlayerKeyAction.ignore,
+            reason: 'volume must never be consumed nor open the menu',
+          );
         }
       }
     });
   });
 
-  group('OK / tap toggle', () {
-    test('OK opens the controls when hidden', () {
+  group('OK', () {
+    test('opens the controls when they are hidden', () {
       expect(
         playerKeyAction(
           key: LogicalKeyboardKey.select,
           isKeyDown: true,
           controlsVisible: false,
-          rootHasFocus: true,
         ),
         PlayerKeyAction.revealControls,
       );
     });
 
-    test('OK closes the controls when they are open and nothing is focused', () {
-      expect(
-        playerKeyAction(
-          key: LogicalKeyboardKey.select,
-          isKeyDown: true,
-          controlsVisible: true,
-          rootHasFocus: true,
-        ),
-        PlayerKeyAction.toggleControls,
-      );
-    });
-
-    test('enter and gamepad A behave like OK', () {
-      for (final key in [LogicalKeyboardKey.enter, LogicalKeyboardKey.gameButtonA]) {
+    test('goes to the focused button once the controls are up (never closes)', () {
+      // Closing is Back's job / the inactivity timer's: with the controls open
+      // OK must press whatever the remote has selected.
+      for (final key in [
+        LogicalKeyboardKey.select,
+        LogicalKeyboardKey.enter,
+        LogicalKeyboardKey.gameButtonA,
+      ]) {
         expect(
-          playerKeyAction(
-            key: key,
-            isKeyDown: true,
-            controlsVisible: true,
-            rootHasFocus: true,
-          ),
-          PlayerKeyAction.toggleControls,
+          playerKeyAction(key: key, isKeyDown: true, controlsVisible: true),
+          PlayerKeyAction.pokeAndPass,
         );
       }
-    });
-
-    test('OK on a focused control button is left to that button', () {
-      expect(
-        playerKeyAction(
-          key: LogicalKeyboardKey.select,
-          isKeyDown: true,
-          controlsVisible: true,
-          rootHasFocus: false,
-        ),
-        PlayerKeyAction.pokeAndPass,
-      );
     });
   });
 
@@ -93,7 +62,6 @@ void main() {
           key: LogicalKeyboardKey.arrowDown,
           isKeyDown: true,
           controlsVisible: false,
-          rootHasFocus: true,
         ),
         PlayerKeyAction.revealControls,
       );
@@ -105,7 +73,6 @@ void main() {
           key: LogicalKeyboardKey.arrowDown,
           isKeyDown: true,
           controlsVisible: true,
-          rootHasFocus: true,
         ),
         PlayerKeyAction.pokeAndPass,
       );
@@ -117,7 +84,6 @@ void main() {
           key: LogicalKeyboardKey.select,
           isKeyDown: false,
           controlsVisible: true,
-          rootHasFocus: true,
         ),
         PlayerKeyAction.ignore,
       );

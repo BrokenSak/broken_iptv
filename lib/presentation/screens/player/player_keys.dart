@@ -13,10 +13,9 @@ enum PlayerKeyAction {
   /// blind-activate a button that is invisible but still focusable.
   revealControls,
 
-  /// Controls are visible with nothing focused: close them (tap/OK toggle).
-  toggleControls,
-
-  /// Keep the controls awake and let the focused widget handle the key.
+  /// Keep the controls awake and let the focused widget handle the key: with
+  /// the controls up, OK belongs to the focused button, and the arrows to the
+  /// focus traversal. Closing is Back's job (and the auto-hide timer's).
   pokeAndPass,
 }
 
@@ -35,17 +34,16 @@ bool isSelectKey(LogicalKeyboardKey k) =>
 
 /// Decides what a key press does in the player.
 ///
-/// [rootHasFocus] is whether the player's root focus node holds the focus,
-/// i.e. no control button is focused — only then does OK toggle the menu.
+/// Note there is no "close" here: once the controls are up, every key belongs
+/// to them (OK presses the focused button, arrows move between buttons). The
+/// menu is closed with Back or by the inactivity timer.
 PlayerKeyAction playerKeyAction({
   required LogicalKeyboardKey key,
   required bool isKeyDown,
   required bool controlsVisible,
-  required bool rootHasFocus,
 }) {
   if (isVolumeKey(key)) return PlayerKeyAction.ignore;
   if (!isKeyDown) return PlayerKeyAction.ignore;
   if (!controlsVisible) return PlayerKeyAction.revealControls;
-  if (rootHasFocus && isSelectKey(key)) return PlayerKeyAction.toggleControls;
   return PlayerKeyAction.pokeAndPass;
 }

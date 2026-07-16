@@ -69,7 +69,10 @@ ProviderContainer _container(FakeDownloadService fake) {
 }
 
 /// Waits until [test] holds or the timeout elapses (downloads are async).
-Future<void> _until(bool Function() test, {Duration timeout = const Duration(seconds: 2)}) async {
+/// The queue is fire-and-forget, so there is no future to await; the deadline
+/// is generous on purpose — a tighter one flaked when the whole suite ran in
+/// parallel on a loaded machine.
+Future<void> _until(bool Function() test, {Duration timeout = const Duration(seconds: 10)}) async {
   final deadline = DateTime.now().add(timeout);
   while (!test() && DateTime.now().isBefore(deadline)) {
     await Future<void>.delayed(const Duration(milliseconds: 5));
