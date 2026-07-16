@@ -2,13 +2,31 @@
     <!-- Explicit INTERNET permission so a release build never depends on a
          plugin to pull it in. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- TV support (Firestick / Android TV) without excluding phones:
+         required="false" everywhere, so the same APK still installs on a
+         phone that has a touchscreen and no leanback. Without the touchscreen
+         entry a TV launcher can consider the app incompatible. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false"/>
+
     <application
         android:label="Broken IPTV"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner"
         android:allowBackup="false"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- banner: TV launchers (Fire TV in particular) show a RECTANGULAR
+             320x180 artwork, not the square icon. With no banner declared the
+             Firestick falls back to squeezing ic_launcher into that slot.
+             Asset: res/drawable-xhdpi/tv_banner.png (+ xxhdpi for 4K sticks),
+             generated from assets/icon/app_icon.png — see HANDOFF §5. -->
         <!-- allowBackup=false: Android Auto Backup would restore the Hive data
              (the saved playlist) on reinstall, but the Keystore key behind the
              secure-storage password is device-bound and NOT backed up, so the
@@ -39,6 +57,10 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                <!-- LEANBACK_LAUNCHER: makes TV launchers list the app as a
+                     proper TV app (and use the banner above). Harmless on
+                     phones, which keep using the LAUNCHER category. -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
