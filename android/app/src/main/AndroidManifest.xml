@@ -19,6 +19,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/tv_banner"
+        android:logo="@drawable/tv_banner"
         android:allowBackup="false"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
@@ -48,6 +49,7 @@
             android:taskAffinity=""
             android:icon="@mipmap/ic_launcher"
             android:banner="@drawable/tv_banner"
+            android:logo="@drawable/tv_banner"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

@@ -66,11 +66,13 @@ void main() {
     expect(taps, 0, reason: 'a hold must not also fire the tap');
   });
 
-  testWidgets('TvFocusable: outside TV mode a tile never takes focus', (tester) async {
-    // On a phone the first tile of every grid used to autofocus and light up on
-    // its own ("buttons lit that I never clicked"): there is no D-pad there, so
-    // the node must not be focusable at all.
-    TvFocusable.debugDpadOverride = false; // phone / desktop
+  testWidgets('TvFocusable: without D-pad support (Windows) nothing takes focus',
+      (tester) async {
+    // On Windows arrows are disabled app-wide and tiles are mouse-only: the
+    // node must be invisible to the focus system. (Phone touch mode instead
+    // keeps nodes focusABLE but ignores autofocus — covered by the policy
+    // tests in ui_mode_test.dart.)
+    TvFocusable.debugDpadOverride = false;
     final node = FocusNode();
     addTearDown(node.dispose);
 
@@ -81,7 +83,7 @@ void main() {
       child: const SizedBox(width: 100, height: 40),
     )));
     await tester.pumpAndSettle();
-    expect(node.hasFocus, isFalse, reason: 'autofocus must be ignored off-TV');
+    expect(node.hasFocus, isFalse, reason: 'autofocus must be ignored');
 
     node.requestFocus();
     await tester.pumpAndSettle();

@@ -26,9 +26,12 @@ class _DeviceModeScreenState extends State<DeviceModeScreen> {
   }
 
   Future<void> _choose(DeviceMode mode) async {
-    await _service.save(mode);
-    if (!mounted) return;
-    context.go('/profiles');
+    // Hive applies the value to memory synchronously; the returned future is
+    // only the disk flush. Navigate right away (the router redirect reads the
+    // in-memory value) instead of stalling the tap on slow TV-stick flash.
+    final flushed = _service.save(mode);
+    if (mounted) context.go('/profiles');
+    await flushed;
   }
 
   @override

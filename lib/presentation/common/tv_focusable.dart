@@ -7,13 +7,17 @@ import '../../core/ui_mode.dart';
 
 /// Wraps a child so it works with pointer (mouse/touch) *and* D-pad input.
 ///
-/// **Focus exists only in TV mode.** On a phone (touch) and on Windows (mouse)
-/// nothing must ever look selected: a ring appearing on a tile nobody touched
-/// reads as a bug — which is exactly what happened, since the first tile of
-/// every grid autofocused on any Android build, phone included.
+/// Focus rules (both burned by shipping the wrong ones):
+/// - **Focusable on any Android build** ([dpadFocusEnabled]), never on
+///   Windows. Gating focusability on the saved TV mode locked fresh installs
+///   out — the device picker shows *before* a mode exists, so nothing was
+///   focusable and the remote couldn't even choose "TV".
+/// - **Autofocus only where a D-pad is expected** ([dpadAutofocusEnabled]):
+///   TV mode or no mode chosen yet. Honouring it on phones lit up the first
+///   tile of every grid on its own ("buttons lit that I never clicked").
 ///
-/// In TV mode the widget is a single focus node (a previous version nested two,
-/// so the D-pad focus landed on the node without the key handler and OK did
+/// The widget is a single focus node (a previous version nested two, so the
+/// D-pad focus landed on the node without the key handler and OK did
 /// nothing): OK activates on key-up, and holding OK (key repeat) triggers
 /// [onLongPress] — the D-pad equivalent of a touch long-press.
 class TvFocusable extends StatefulWidget {
@@ -32,13 +36,13 @@ class TvFocusable extends StatefulWidget {
   final VoidCallback? onLongPress;
   final double borderRadius;
 
-  /// Only honoured in TV mode, and only when nothing else in the scope holds
-  /// the focus yet.
+  /// Only honoured where a D-pad is expected (see [dpadAutofocusEnabled]).
   final bool autofocus;
   final FocusNode? focusNode;
 
   /// Test hook: forces D-pad (TV) behaviour regardless of the host platform
   /// (widget tests run on the dev machine, where Platform says Windows).
+  /// true = TV (focusable + autofocus), false = Windows (no focus at all).
   @visibleForTesting
   static bool? debugDpadOverride;
 
@@ -52,7 +56,11 @@ class _TvFocusableState extends State<TvFocusable> {
   bool _longPressFired = false;
 
   /// Whether this element takes part in D-pad focus at all.
-  static bool get _dpadMode => TvFocusable.debugDpadOverride ?? isTvMode();
+  static bool get _focusable => TvFocusable.debugDpadOverride ?? dpadFocusEnabled();
+
+  /// Whether autofocus requests are honoured.
+  static bool get _autofocusEnabled =>
+      TvFocusable.debugDpadOverride ?? dpadAutofocusEnabled();
 
   /// Hover highlight is a mouse thing, i.e. Windows only.
   static bool get _hoverEnabled => Platform.isWindows;
@@ -98,11 +106,12 @@ class _TvFocusableState extends State<TvFocusable> {
   Widget build(BuildContext context) {
     return Focus(
       focusNode: widget.focusNode,
-      // Outside TV mode this node is invisible to the focus system entirely:
-      // no autofocus, not reachable by traversal, cannot even be focused.
-      autofocus: widget.autofocus && _dpadMode,
-      canRequestFocus: _dpadMode,
-      skipTraversal: !_dpadMode,
+      // On Windows this node is invisible to the focus system entirely. On
+      // Android it is always focusable (a remote must work even in the wrong
+      // mode), but only pre-lights itself where a D-pad is expected.
+      autofocus: widget.autofocus && _autofocusEnabled,
+      canRequestFocus: _focusable,
+      skipTraversal: !_focusable,
       onKeyEvent: _handleKey,
       child: Builder(
         builder: (context) {
