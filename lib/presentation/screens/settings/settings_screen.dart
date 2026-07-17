@@ -123,16 +123,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 8),
           // Each playlist shows only its name; the selected one is filled white
           // like the other setting chips. Edit/delete live on the box itself.
-          ...profiles.map((p) => _PlaylistTile(
-                profile: p,
-                selected: p.id == selectedId,
-                onSelect: () => ref.read(selectedProfileIdProvider.notifier).select(p.id),
-                onEdit: () => context.push('/profiles/add', extra: p),
-                onDelete: () => _confirmDeletePlaylist(p),
+          // D-pad: the first item autofocuses, so entering Settings on TV
+          // always has a visibly focused starting point.
+          ...profiles.asMap().entries.map((e) => _PlaylistTile(
+                profile: e.value,
+                autofocus: e.key == 0,
+                selected: e.value.id == selectedId,
+                onSelect: () =>
+                    ref.read(selectedProfileIdProvider.notifier).select(e.value.id),
+                onEdit: () => context.push('/profiles/add', extra: e.value),
+                onDelete: () => _confirmDeletePlaylist(e.value),
               )),
           const SizedBox(height: 4),
           TvFocusable(
             borderRadius: 14,
+            autofocus: profiles.isEmpty,
             onTap: () => context.push('/profiles/add'),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -293,6 +298,7 @@ class _PlaylistTile extends StatelessWidget {
     required this.onSelect,
     required this.onEdit,
     required this.onDelete,
+    this.autofocus = false,
   });
 
   final XtreamProfile profile;
@@ -300,6 +306,7 @@ class _PlaylistTile extends StatelessWidget {
   final VoidCallback onSelect;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -307,6 +314,7 @@ class _PlaylistTile extends StatelessWidget {
     final subFg = selected ? Colors.black54 : AppColors.textSecondary;
     return TvFocusable(
       borderRadius: 14,
+      autofocus: autofocus,
       onTap: onSelect,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

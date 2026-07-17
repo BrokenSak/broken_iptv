@@ -90,6 +90,10 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
+            // D-pad: the fresh-install flow lands here right after the device
+            // picker — the remote needs a focused button to press OK on.
+            // Invisible on touch (focus highlights only show in keyboard mode).
+            autofocus: true,
             onPressed: onAdd,
             icon: const Icon(Icons.add),
             label: const Text('Aggiungi playlist'),

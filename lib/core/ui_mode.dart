@@ -1,16 +1,25 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import '../data/services/device_mode_service.dart';
+
+/// Test hook: pretend the app runs on Android with this saved device mode,
+/// so widget tests (which run on the dev host, where Platform says Windows)
+/// can drive the REAL screens as a TV or a phone. Null = real platform.
+@visibleForTesting
+DeviceMode? debugDeviceModeOverride;
+
+DeviceMode? _savedMode() => debugDeviceModeOverride ?? DeviceModeService().getSaved();
+bool get _isAndroidLike => debugDeviceModeOverride != null || Platform.isAndroid;
 
 /// Running on a TV/Firestick: the Android APK with the saved device mode set
 /// to [DeviceMode.tv]. Drives TV-only affordances (favourite heart as a badge,
 /// focus landing on the player's main control, TV text fields).
-bool isTvMode() =>
-    Platform.isAndroid && DeviceModeService().getSaved() == DeviceMode.tv;
+bool isTvMode() => _isAndroidLike && _savedMode() == DeviceMode.tv;
 
 /// Running on a phone/tablet: the Android APK in touch mode.
-bool isPhoneMode() =>
-    Platform.isAndroid && DeviceModeService().getSaved() == DeviceMode.touch;
+bool isPhoneMode() => _isAndroidLike && _savedMode() == DeviceMode.touch;
 
 /// Whether TvFocusable nodes can take focus at all.
 ///
@@ -21,7 +30,7 @@ bool isPhoneMode() =>
 /// left a TV stuck in touch mode with a dead remote and no way to reach the
 /// settings that fix it. Focusable-but-unfocused nodes are invisible on a
 /// phone: nothing autofocuses there (see below) and taps never focus them.
-bool dpadFocusEnabled() => dpadFocusPolicy(isAndroid: Platform.isAndroid);
+bool dpadFocusEnabled() => dpadFocusPolicy(isAndroid: _isAndroidLike);
 
 /// Whether `autofocus` requests should be honoured, pre-lighting the first
 /// element of a screen. TV mode, plus the first launch **before a mode
@@ -29,8 +38,8 @@ bool dpadFocusEnabled() => dpadFocusPolicy(isAndroid: Platform.isAndroid);
 /// focused card or a remote has nothing to press OK on. Never in touch mode:
 /// an element lighting up on its own on a phone reads as a bug (reported).
 bool dpadAutofocusEnabled() => dpadAutofocusPolicy(
-      isAndroid: Platform.isAndroid,
-      savedMode: DeviceModeService().getSaved(),
+      isAndroid: _isAndroidLike,
+      savedMode: _savedMode(),
     );
 
 /// Pure policy behind [dpadFocusEnabled], separated so tests can exercise it

@@ -92,9 +92,15 @@ class PlayerSettingsNotifier extends Notifier<PlayerSettings> {
     );
   }
 
+  // NB: every setter updates state FIRST and lets the disk flush trail
+  // behind (Hive applies the value to memory synchronously). Awaiting the
+  // write before `state =` made the UI wait on flash IO — and froze the
+  // remote-driven widget tests, where fake-clock code awaiting real IO
+  // never resumes (same lesson as the device picker).
   Future<void> setIntroSkipSeconds(int seconds) async {
-    await StorageService.prefsBox.put(_introSkipKey, seconds);
+    final flushed = StorageService.prefsBox.put(_introSkipKey, seconds);
     state = state.copyWith(introSkipSeconds: seconds);
+    await flushed;
   }
 
   void setVolume(double volume) {
@@ -104,18 +110,21 @@ class PlayerSettingsNotifier extends Notifier<PlayerSettings> {
   }
 
   Future<void> setAspect(VideoAspect aspect) async {
-    await StorageService.prefsBox.put(_aspectKey, aspect.name);
+    final flushed = StorageService.prefsBox.put(_aspectKey, aspect.name);
     state = state.copyWith(aspect: aspect);
+    await flushed;
   }
 
   Future<void> setSubtitlesEnabled(bool enabled) async {
-    await StorageService.prefsBox.put(_subtitlesKey, enabled);
+    final flushed = StorageService.prefsBox.put(_subtitlesKey, enabled);
     state = state.copyWith(subtitlesEnabled: enabled);
+    await flushed;
   }
 
   Future<void> setSkipSeconds(int seconds) async {
-    await StorageService.prefsBox.put(_skipKey, seconds);
+    final flushed = StorageService.prefsBox.put(_skipKey, seconds);
     state = state.copyWith(skipSeconds: seconds);
+    await flushed;
   }
 }
 

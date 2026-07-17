@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/ui_mode.dart';
 import '../../data/services/device_mode_service.dart';
 
 /// A [TextFormField] that plays nice with a TV remote.
@@ -52,9 +51,7 @@ class TvTextFormField extends StatefulWidget {
 }
 
 class _TvTextFormFieldState extends State<TvTextFormField> {
-  static bool get _tvMode =>
-      TvTextFormField.debugTvModeOverride ??
-      (Platform.isAndroid && DeviceModeService().getSaved() == DeviceMode.tv);
+  static bool get _tvMode => TvTextFormField.debugTvModeOverride ?? isTvMode();
 
   final FocusNode _wrapperNode = FocusNode(debugLabel: 'TvTextFormField.wrapper');
   // skipTraversal: the D-pad can never wander into the field by itself — the
