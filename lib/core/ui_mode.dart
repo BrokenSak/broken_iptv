@@ -50,3 +50,16 @@ bool dpadFocusPolicy({required bool isAndroid}) => isAndroid;
 /// install, picker on screen) MUST allow autofocus — regression guard.
 bool dpadAutofocusPolicy({required bool isAndroid, required DeviceMode? savedMode}) =>
     isAndroid && savedMode != DeviceMode.touch;
+
+/// Whether the **persistent focus ring** should be painted on a focused
+/// element. Only where a remote drives the UI — TV mode, or a fresh install
+/// before a mode is chosen (the device picker, navigated by remote).
+///
+/// NOT on a phone (touch): there the feedback is the touch itself (a momentary
+/// press highlight), and a stuck ring on an element nobody selected reads as a
+/// bug. NOT on Windows: the mouse uses hover/click. In both, only the
+/// *selected* item (e.g. the current category) stays highlighted — never a
+/// stray focus. This is the highlight-mode gate a normal Material app applies
+/// automatically; the custom ring bypassed it, hence the phone regression.
+bool dpadHighlightVisible() =>
+    dpadAutofocusPolicy(isAndroid: _isAndroidLike, savedMode: _savedMode());

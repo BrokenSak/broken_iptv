@@ -26,7 +26,8 @@ class SeriesScreen extends ConsumerStatefulWidget {
 }
 
 class _SeriesScreenState extends ConsumerState<SeriesScreen> {
-  String? _selectedCategoryId;
+  // Serie opens on "Continua a guardare" by default (user request).
+  String? _selectedCategoryId = kContinueCategoryId;
   String _query = '';
 
   @override
@@ -46,7 +47,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
       onSearch: (q) => setState(() => _query = q),
       body: categories.when(
         data: (cats) {
-          _selectedCategoryId ??= _defaultCategory(cats);
+          _selectedCategoryId ??= kContinueCategoryId;
           final counts = ref.watch(seriesCategoryCountsProvider).value ?? const {};
           final adultCatIds = {for (final c in cats) if (isAdultCategory(c.name)) c.id};
           final total = counts.entries
@@ -104,13 +105,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
     }
   }
 
-  /// First non-adult category (so we never auto-open on an adult one).
-  String _defaultCategory(List cats) {
-    for (final c in cats) {
-      if (!isAdultCategory(c.name)) return c.id as String;
-    }
-    return cats.isNotEmpty ? cats.first.id as String : kFavoritesCategoryId;
-  }
 }
 
 Widget _posterGrid(List<SeriesItem> items) {

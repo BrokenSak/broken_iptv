@@ -24,16 +24,9 @@ class LiveTvScreen extends ConsumerStatefulWidget {
 }
 
 class _LiveTvScreenState extends ConsumerState<LiveTvScreen> {
-  String? _selectedCategoryId;
+  // Live TV opens on Preferiti by default (user request).
+  String? _selectedCategoryId = kFavoritesCategoryId;
   String _query = '';
-
-  /// First non-adult category (so we never auto-open on an adult one).
-  String _defaultCategory(List cats) {
-    for (final c in cats) {
-      if (!isAdultCategory(c.name)) return c.id as String;
-    }
-    return cats.isNotEmpty ? cats.first.id as String : kFavoritesCategoryId;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +59,7 @@ class _LiveTvScreenState extends ConsumerState<LiveTvScreen> {
       onSearch: (q) => setState(() => _query = q),
       body: categories.when(
         data: (cats) {
-          _selectedCategoryId ??= _defaultCategory(cats);
+          _selectedCategoryId ??= kFavoritesCategoryId;
           final counts = ref.watch(liveCategoryCountsProvider).value ?? const {};
           return Row(
             children: [

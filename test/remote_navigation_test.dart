@@ -93,6 +93,13 @@ class _FixedSelectedProfileId extends SelectedProfileIdNotifier {
   String? build() => 'test-profile';
 }
 
+Future<void> _pressDown(WidgetTester tester, int times) async {
+  for (var i = 0; i < times; i++) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+  }
+}
+
 Future<void> _pressOk(WidgetTester tester) async {
   await tester.sendKeyDownEvent(LogicalKeyboardKey.select);
   await tester.sendKeyUpEvent(LogicalKeyboardKey.select);
@@ -168,7 +175,7 @@ void main() {
     expect(find.text('TV'), findsOneWidget);
   });
 
-  testWidgets('live TV: sidebar → grid → OK opens the player with the channel',
+  testWidgets('live TV: opens on Preferiti; remote reaches a category → player',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
@@ -178,10 +185,16 @@ void main() {
       child: _shell(const LiveTvScreen()),
     ));
     await tester.pumpAndSettle();
+
+    // Default pane = Preferiti (empty here). Sidebar: PREFERITI[0], Sport[1].
+    expect(find.textContaining('Nessun canale preferito'), findsOneWidget);
+    expect(find.text('Canale Test'), findsNothing);
+
+    await _pressDown(tester, 1); // → Sport
+    await _pressOk(tester); // select it
     expect(find.text('Canale Test'), findsOneWidget);
 
-    // Arrival: sidebar first row focused. Right: into the channel grid.
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight); // into the grid
     await tester.pumpAndSettle();
     await _pressOk(tester);
 
@@ -190,7 +203,7 @@ void main() {
     expect(find.textContaining('streamId=100'), findsOneWidget);
   });
 
-  testWidgets('film: sidebar → grid → OK opens the movie detail',
+  testWidgets('film: opens on Continua; remote reaches a category → detail',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
@@ -199,6 +212,13 @@ void main() {
       child: _shell(const VodScreen()),
     ));
     await tester.pumpAndSettle();
+
+    // Default pane = Continua (empty). Sidebar: CONTINUA, PREFERITI, TUTTI,
+    // ULTIMI, Azione → 4 downs to the first real category.
+    expect(find.textContaining('Niente da riprendere'), findsOneWidget);
+
+    await _pressDown(tester, 4); // → Azione
+    await _pressOk(tester);
     expect(find.text('Film Test'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
@@ -208,7 +228,7 @@ void main() {
     expect(find.text('STUB /vod/10'), findsOneWidget);
   });
 
-  testWidgets('serie: sidebar → grid → OK opens the series detail',
+  testWidgets('serie: opens on Continua; remote reaches a category → detail',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
@@ -217,6 +237,11 @@ void main() {
       child: _shell(const SeriesScreen()),
     ));
     await tester.pumpAndSettle();
+
+    expect(find.textContaining('Niente da riprendere'), findsOneWidget);
+
+    await _pressDown(tester, 4); // → Drama
+    await _pressOk(tester);
     expect(find.text('Serie Test'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);

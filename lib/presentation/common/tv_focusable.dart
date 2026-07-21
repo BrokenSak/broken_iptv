@@ -7,14 +7,20 @@ import '../../core/ui_mode.dart';
 
 /// Wraps a child so it works with pointer (mouse/touch) *and* D-pad input.
 ///
-/// Focus rules (both burned by shipping the wrong ones):
+/// Focus rules (each learned the hard way):
 /// - **Focusable on any Android build** ([dpadFocusEnabled]), never on
 ///   Windows. Gating focusability on the saved TV mode locked fresh installs
 ///   out — the device picker shows *before* a mode exists, so nothing was
 ///   focusable and the remote couldn't even choose "TV".
 /// - **Autofocus only where a D-pad is expected** ([dpadAutofocusEnabled]):
 ///   TV mode or no mode chosen yet. Honouring it on phones lit up the first
-///   tile of every grid on its own ("buttons lit that I never clicked").
+///   tile of every grid on its own.
+/// - **The focus RING shows only in D-pad mode** ([dpadHighlightVisible]).
+///   Android nodes stay focusable everywhere (so the remote always works), but
+///   on a phone a focused node must look no different — the feedback there is a
+///   momentary press highlight, and on Windows the mouse hover. Otherwise a
+///   stray focus leaves a ring that touch can't clear ("la prima voce resta
+///   evidenziata").
 ///
 /// The widget is a single focus node (a previous version nested two, so the
 /// D-pad focus landed on the node without the key handler and OK did
@@ -52,6 +58,7 @@ class TvFocusable extends StatefulWidget {
 
 class _TvFocusableState extends State<TvFocusable> {
   bool _hovered = false;
+  bool _pressed = false;
   bool _selectDown = false;
   bool _longPressFired = false;
 
@@ -61,6 +68,10 @@ class _TvFocusableState extends State<TvFocusable> {
   /// Whether autofocus requests are honoured.
   static bool get _autofocusEnabled =>
       TvFocusable.debugDpadOverride ?? dpadAutofocusEnabled();
+
+  /// Whether a focused node paints the ring (D-pad in use).
+  static bool get _ringVisible =>
+      TvFocusable.debugDpadOverride ?? dpadHighlightVisible();
 
   /// Hover highlight is a mouse thing, i.e. Windows only.
   static bool get _hoverEnabled => Platform.isWindows;
@@ -118,6 +129,10 @@ class _TvFocusableState extends State<TvFocusable> {
           // Focus.of registers a dependency, so this subtree rebuilds when
           // the focus state changes.
           final focused = Focus.of(context).hasPrimaryFocus;
+          // The ring (persistent) is D-pad only. Hover (mouse) and press
+          // (touch/click) are momentary soft hints for the other platforms.
+          final showRing = focused && _ringVisible;
+          final softHint = !showRing && (_hovered || _pressed);
 
           // NB: no scaling. A focused tile used to grow, which made it spill
           // over its neighbours and overlap their captions. The ring + glow
@@ -130,19 +145,21 @@ class _TvFocusableState extends State<TvFocusable> {
             child: GestureDetector(
               onTap: widget.onTap,
               onLongPress: widget.onLongPress,
+              // Momentary press feedback (touch on phone, click on Windows).
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapUp: (_) => setState(() => _pressed = false),
+              onTapCancel: () => setState(() => _pressed = false),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 130),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                   border: Border.all(
-                    // Focus (remote/keyboard) must be unmistakable; hover is
-                    // only a soft hint.
-                    color: focused
+                    color: showRing
                         ? AppColors.focusRing
-                        : (_hovered ? Colors.white38 : Colors.transparent),
+                        : (softHint ? Colors.white38 : Colors.transparent),
                     width: 3,
                   ),
-                  boxShadow: focused
+                  boxShadow: showRing
                       ? [
                           // Kept tight: a wide/bright glow bleeds onto the
                           // neighbours and makes them look selected too.

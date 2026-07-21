@@ -1174,7 +1174,11 @@ class _SeekBarState extends State<_SeekBar> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _node.hasFocus ? AppColors.focusRing : Colors.transparent,
+                // D-pad only, like every other control: on touch the slider
+                // thumb is feedback enough (see dpadHighlightVisible).
+                color: _node.hasFocus && dpadHighlightVisible()
+                    ? AppColors.focusRing
+                    : Colors.transparent,
                 width: 2,
               ),
             ),
