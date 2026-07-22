@@ -1,7 +1,7 @@
 {
-  "build": 9,
-  "version": "1.3.5",
-  "notes": "Copertine mancanti sostituite dal segnaposto invece di lasciare riquadri vuoti, e impostazioni di sincronizzazione modificabili solo entrandoci.",
+  "build": 10,
+  "version": "1.3.6",
+  "notes": "L'app ricontrolla la presenza di aggiornamenti anche quando torna in primo piano, senza doverla riavviare.",
   "apk": "https://github.com/BrokenSak/Broken-IPTV/releases/latest/download/BrokenIPTV.apk",
   "exe": "https://github.com/BrokenSak/Broken-IPTV/releases/latest/download/BrokenIPTV.exe"
 }
