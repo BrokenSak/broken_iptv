@@ -19,6 +19,7 @@ import '../../presentation/screens/series/series_detail_screen.dart';
 import '../../presentation/screens/player/player_screen.dart';
 import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/settings/settings_screen.dart';
+import '../../presentation/screens/settings/sync_settings_screen.dart';
 import '../../presentation/screens/downloads/downloads_screen.dart';
 
 /// Startup routing: on Android the very first launch goes through the
@@ -126,6 +127,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => _bg(const SettingsScreen()),
+    ),
+    GoRoute(
+      path: '/settings/sync',
+      builder: (context, state) => _bg(const SyncSettingsScreen()),
     ),
     GoRoute(
       path: '/downloads',

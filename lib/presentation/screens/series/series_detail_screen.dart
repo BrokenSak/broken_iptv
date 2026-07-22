@@ -11,6 +11,7 @@ import '../../../data/repositories/series_repository.dart';
 import '../../../state/downloads_providers.dart';
 import '../../../state/series_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/poster_image.dart';
 import '../../common/download_button.dart';
 import '../../common/glass_dropdown.dart';
 import '../../common/tv_focusable.dart';
@@ -55,12 +56,13 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                     child: SizedBox(
                       width: 150,
                       height: 220,
-                      child: series.coverUrl != null
-                          ? CachedNetworkImage(imageUrl: series.coverUrl!, fit: BoxFit.cover)
-                          : Container(
-                              color: AppColors.surface,
-                              child: const Icon(Icons.video_library_outlined, size: 40),
-                            ),
+                      child: PosterImage(
+                        url: series.coverUrl,
+                        fallback: Container(
+                          color: AppColors.surface,
+                          child: const Icon(Icons.video_library_outlined, size: 40),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 20),

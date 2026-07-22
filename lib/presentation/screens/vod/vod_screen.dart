@@ -10,6 +10,7 @@ import '../../../state/favorites_providers.dart';
 import '../../../state/live_providers.dart' show xtreamSessionProvider;
 import '../../../state/vod_providers.dart';
 import '../../../state/watch_progress_providers.dart';
+import '../../common/poster_image.dart';
 import '../../common/app_dialogs.dart';
 import '../../common/catalog_scaffold.dart';
 import '../../common/error_retry.dart';
@@ -174,9 +175,10 @@ class _VodContinue extends ConsumerWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: SizedBox.expand(
-                        child: p.imageUrl != null
-                            ? CachedNetworkImage(imageUrl: p.imageUrl!, fit: BoxFit.cover)
-                            : const _PosterFallback(),
+                        child: PosterImage(
+                          url: p.imageUrl,
+                          fallback: const _PosterFallback(),
+                        ),
                       ),
                     ),
                     Positioned(
