@@ -89,4 +89,93 @@ void main() {
       );
     });
   });
+
+  group('desktop keyboard media controls (Windows)', () {
+    test('space toggles play/pause, arrows seek — whatever the controls state', () {
+      for (final visible in [true, false]) {
+        expect(
+          playerKeyAction(
+            key: LogicalKeyboardKey.space,
+            isKeyDown: true,
+            controlsVisible: visible,
+            isDesktop: true,
+          ),
+          PlayerKeyAction.playPause,
+        );
+        expect(
+          playerKeyAction(
+            key: LogicalKeyboardKey.arrowRight,
+            isKeyDown: true,
+            controlsVisible: visible,
+            isDesktop: true,
+          ),
+          PlayerKeyAction.seekForward,
+        );
+        expect(
+          playerKeyAction(
+            key: LogicalKeyboardKey.arrowLeft,
+            isKeyDown: true,
+            controlsVisible: visible,
+            isDesktop: true,
+          ),
+          PlayerKeyAction.seekBackward,
+        );
+      }
+    });
+
+    test('not on live (no pause/seek there)', () {
+      expect(
+        playerKeyAction(
+          key: LogicalKeyboardKey.space,
+          isKeyDown: true,
+          controlsVisible: false,
+          isDesktop: true,
+          isLive: true,
+        ),
+        PlayerKeyAction.revealControls,
+      );
+      expect(
+        playerKeyAction(
+          key: LogicalKeyboardKey.arrowRight,
+          isKeyDown: true,
+          controlsVisible: true,
+          isDesktop: true,
+          isLive: true,
+        ),
+        PlayerKeyAction.pokeAndPass,
+      );
+    });
+
+    test('NOT on TV: arrows stay D-pad navigation, space is not a media key', () {
+      // isDesktop defaults to false (TV/phone): arrows must not seek.
+      expect(
+        playerKeyAction(
+          key: LogicalKeyboardKey.arrowRight,
+          isKeyDown: true,
+          controlsVisible: true,
+        ),
+        PlayerKeyAction.pokeAndPass,
+      );
+      expect(
+        playerKeyAction(
+          key: LogicalKeyboardKey.arrowLeft,
+          isKeyDown: true,
+          controlsVisible: false,
+        ),
+        PlayerKeyAction.revealControls,
+      );
+    });
+
+    test('only key-down acts (holding does not thrash play/pause)', () {
+      expect(
+        playerKeyAction(
+          key: LogicalKeyboardKey.space,
+          isKeyDown: false,
+          controlsVisible: true,
+          isDesktop: true,
+        ),
+        PlayerKeyAction.ignore,
+      );
+    });
+  });
 }

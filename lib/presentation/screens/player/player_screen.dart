@@ -509,10 +509,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   /// Executes the decision made by [playerKeyAction].
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    final skip = ref.read(playerSettingsProvider).skipSeconds;
     switch (playerKeyAction(
       key: event.logicalKey,
       isKeyDown: event is KeyDownEvent,
       controlsVisible: _controlsVisible,
+      isDesktop: Platform.isWindows,
+      isLive: _isLive,
     )) {
       case PlayerKeyAction.ignore:
         return KeyEventResult.ignored;
@@ -522,6 +525,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       case PlayerKeyAction.pokeAndPass:
         _poke();
         return KeyEventResult.ignored;
+      case PlayerKeyAction.playPause:
+        _togglePlayPause(); // pokes the controls itself
+        return KeyEventResult.handled;
+      case PlayerKeyAction.seekForward:
+        _skip(skip);
+        return KeyEventResult.handled;
+      case PlayerKeyAction.seekBackward:
+        _skip(-skip);
+        return KeyEventResult.handled;
     }
   }
 

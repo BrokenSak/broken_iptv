@@ -17,6 +17,11 @@ enum PlayerKeyAction {
   /// the controls up, OK belongs to the focused button, and the arrows to the
   /// focus traversal. Closing is Back's job (and the auto-hide timer's).
   pokeAndPass,
+
+  /// Desktop keyboard media controls (space / arrows) — see [playerKeyAction].
+  playPause,
+  seekForward,
+  seekBackward,
 }
 
 /// Volume keys belong to the OS — the player must never react to them.
@@ -34,16 +39,31 @@ bool isSelectKey(LogicalKeyboardKey k) =>
 
 /// Decides what a key press does in the player.
 ///
-/// Note there is no "close" here: once the controls are up, every key belongs
-/// to them (OK presses the focused button, arrows move between buttons). The
-/// menu is closed with Back or by the inactivity timer.
+/// On **desktop** (Windows: mouse + keyboard) the arrows are otherwise dead
+/// (globally suppressed in app.dart so they can't drive focus traversal), so
+/// the player repurposes them: Space toggles play/pause, ←/→ seek. Not on TV,
+/// where the arrows are the D-pad and would clash with navigation, and not for
+/// live (no pause/seek).
+///
+/// Otherwise: once the controls are up every key belongs to them (OK presses
+/// the focused button, arrows traverse); when hidden, any key reveals them.
+/// There is no "close" here — that's Back's job and the inactivity timer's.
 PlayerKeyAction playerKeyAction({
   required LogicalKeyboardKey key,
   required bool isKeyDown,
   required bool controlsVisible,
+  bool isDesktop = false,
+  bool isLive = false,
 }) {
   if (isVolumeKey(key)) return PlayerKeyAction.ignore;
   if (!isKeyDown) return PlayerKeyAction.ignore;
+
+  if (isDesktop && !isLive) {
+    if (key == LogicalKeyboardKey.space) return PlayerKeyAction.playPause;
+    if (key == LogicalKeyboardKey.arrowRight) return PlayerKeyAction.seekForward;
+    if (key == LogicalKeyboardKey.arrowLeft) return PlayerKeyAction.seekBackward;
+  }
+
   if (!controlsVisible) return PlayerKeyAction.revealControls;
   return PlayerKeyAction.pokeAndPass;
 }
