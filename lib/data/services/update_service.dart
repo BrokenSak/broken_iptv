@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -39,15 +40,24 @@ class UpdateService {
   /// just means "no update offered".
   Future<UpdateInfo?> check(int currentBuild) async {
     try {
-      final resp = await _dio.get<dynamic>(
+      final resp = await _dio.get<String>(
         _versionUrl,
         options: Options(
-          responseType: ResponseType.json,
+          // ⚠️ Fetch as text and decode by hand. raw.githubusercontent serves
+          // .json files as `text/plain`, and dio only auto-decodes when the
+          // content type says JSON — so asking for ResponseType.json handed
+          // back a String, the old `data is! Map` guard swallowed it, and
+          // every check answered "no update". That bug shipped in 1.2.0 and
+          // made the whole updater dead on arrival. Don't reintroduce it:
+          // decoding here doesn't care what the server labels the body.
+          responseType: ResponseType.plain,
           // Avoid a stale cached copy hiding a fresh release.
           headers: const {'Cache-Control': 'no-cache'},
         ),
       );
-      final data = resp.data;
+      final raw = resp.data;
+      if (raw == null || raw.trim().isEmpty) return null;
+      final data = jsonDecode(raw);
       if (data is! Map) return null;
       return updateFromJson(data.cast<String, dynamic>(), currentBuild);
     } catch (_) {
